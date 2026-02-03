@@ -11,6 +11,7 @@ class VMManager:
         self.vms = []
         self.load_config()
         self.qemu_path = self.get_initial_qemu_path()
+        self.qemu_img_path = self.get_qemu_img_path()
         self.running_processes = {} # Dictionary to map VM index (or ID) to Popen object
 
     def get_initial_qemu_path(self):
@@ -44,6 +45,25 @@ class VMManager:
              
         return path if path else ""
 
+    def get_qemu_img_path(self):
+        system = platform.system()
+        local_qemu = os.path.join(os.getcwd(), "qemu")
+        
+        if os.path.exists(local_qemu):
+             if system == "Windows":
+                 exe = os.path.join(local_qemu, "qemu-img.exe")
+                 if os.path.exists(exe): return exe
+             else:
+                 exe = os.path.join(local_qemu, "qemu-img")
+                 if os.path.exists(exe): return exe
+        
+        if system == "Windows":
+            path = shutil.which("qemu-img.exe")
+        else:
+            path = shutil.which("qemu-img")
+            
+        return path if path else ""
+
     def load_config(self):
         if os.path.exists(CONFIG_FILE):
             try:
@@ -71,12 +91,63 @@ class VMManager:
         except Exception as e:
             print(f"Error saving config: {e}")
 
+    def create_disk(self, disk_path, size_gb):
+        if not self.qemu_img_path:
+            print("qemu-img not found, cannot create disk.")
+            return False
+            
+        if os.path.exists(disk_path):
+            print(f"Disk {disk_path} already exists.")
+            return True # Already exists
+
+        try:
+            cmd = [self.qemu_img_path, "create", "-f", "qcow2", disk_path, f"{size_gb}G"]
+            subprocess.run(cmd, check=True)
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"Error creating disk: {e}")
+            return False
+
+    def resize_disk(self, disk_path, size_gb):
+        if not self.qemu_img_path:
+            print("qemu-img not found, cannot resize disk.")
+            return False
+            
+        if not os.path.exists(disk_path):
+             print(f"Disk {disk_path} does not exist.")
+             return False
+
+        try:
+            # Resize command
+            cmd = [self.qemu_img_path, "resize", disk_path, f"{size_gb}G"]
+            subprocess.run(cmd, check=True)
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"Error resizing disk: {e}")
+            return False
+
     def add_vm(self, vm_data):
+        # Create disk if path and size defined
+        if vm_data.get("disk_path") and vm_data.get("disk_size"):
+             self.create_disk(vm_data["disk_path"], vm_data["disk_size"])
+        
         self.vms.append(vm_data)
         self.save_config()
 
     def update_vm(self, index, vm_data):
         if 0 <= index < len(self.vms):
+            old_vm = self.vms[index]
+            
+            # Check for disk resize
+            if vm_data.get("disk_path") == old_vm.get("disk_path"):
+                if vm_data.get("disk_size") and vm_data["disk_size"] != old_vm.get("disk_size"):
+                     self.resize_disk(vm_data["disk_path"], vm_data["disk_size"])
+            elif vm_data.get("disk_path") and vm_data.get("disk_size"):
+                 # New path, try creating if doesn't exist?
+                 # If user changed path, we assume they might want a new disk or pointing to existing
+                 if not os.path.exists(vm_data["disk_path"]):
+                      self.create_disk(vm_data["disk_path"], vm_data["disk_size"])
+
             self.vms[index] = vm_data
             self.save_config()
 

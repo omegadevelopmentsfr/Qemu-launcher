@@ -44,6 +44,13 @@ class VMEditor(ctk.CTkToplevel):
         if self.vm_data.get("disk_path"): self.disk_entry.insert(0, self.vm_data["disk_path"])
         ctk.CTkButton(self, text="Browse Disk", command=self.browse_disk).pack(pady=(0, 10))
 
+        # Disk Size
+        ctk.CTkLabel(self, text="Disk Size (GB):").pack(pady=(5, 0))
+        self.disk_size_entry = ctk.CTkEntry(self)
+        self.disk_size_entry.pack(pady=(0, 10))
+        if self.vm_data.get("disk_size"): self.disk_size_entry.insert(0, self.vm_data["disk_size"])
+        else: self.disk_size_entry.insert(0, "20") # Default 20GB
+
         # ISO Path
         ctk.CTkLabel(self, text="ISO Path (CDROM):").pack(pady=(5, 0))
         self.iso_entry = ctk.CTkEntry(self)
@@ -72,6 +79,7 @@ class VMEditor(ctk.CTkToplevel):
             "ram": self.ram_entry.get(),
             "cpu": self.cpu_entry.get(),
             "disk_path": self.disk_entry.get(),
+            "disk_size": self.disk_size_entry.get(),
             "iso_path": self.iso_entry.get()
         }
         self.destroy()
@@ -112,9 +120,6 @@ class QemuLauncherApp(ctk.CTk):
         ctk.CTkButton(self.sidebar, text="Add new VM", command=self.add_vm).pack(pady=10, padx=20)
         ctk.CTkButton(self.sidebar, text="Edit Selected", command=self.edit_vm).pack(pady=10, padx=20)
         ctk.CTkButton(self.sidebar, text="Delete Selected", command=self.delete_vm, fg_color="red").pack(pady=10, padx=20)
-        
-        # Quick Launch
-        ctk.CTkButton(self.sidebar, text="Quick Launch ISO", command=self.quick_launch_iso, fg_color="orange").pack(pady=10, padx=20)
         
         # Settings area in sidebar
         ctk.CTkLabel(self.sidebar, text="Settings", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(40, 10))
@@ -224,22 +229,6 @@ class QemuLauncherApp(ctk.CTk):
         new_path = self.qemu_path_entry.get()
         self.vm_manager.qemu_path = new_path
         self.vm_manager.save_config() # This saves path too
-
-    def quick_launch_iso(self):
-        filename = filedialog.askopenfilename(title="Select ISO to Launch", filetypes=[("ISO files", "*.iso"), ("All files", "*.*")])
-        if filename:
-            # Create a temporary VM config
-            vm_data = {
-                "name": "Quick Launch",
-                "ram": "2048", # Default enough for most live ISOs
-                "cpu": "2",
-                "iso_path": filename
-            }
-            error, _ = self.vm_manager.launch_vm_from_data(vm_data)
-            if error:
-                error_window = ctk.CTkToplevel(self)
-                error_window.title("Error")
-                ctk.CTkLabel(error_window, text=error, text_color="red").pack(padx=20, pady=20)
         
 if __name__ == "__main__":
     app = QemuLauncherApp()
