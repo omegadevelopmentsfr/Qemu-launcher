@@ -46,12 +46,14 @@ Run the application:
 python main.py
 ```
 
-### Windows Portable Mode
-To carry this app on a USB stick with QEMU:
-1. Download [QEMU for Windows](https://qemu.weilnetz.de/w64/).
-2. Extract the files into a folder named `qemu` inside the project root.
-   - Structure: `portable-qemu-launcher/qemu/qemu-system-x86_64.exe`
-3. The launcher will automatically detect and use this local QEMU version.
+### Windows Portable Mode (No Admin Rights)
+To carry this app on a USB stick or use it without administrator privileges:
+
+1. Download the [QEMU for Windows installer](https://qemu.weilnetz.de/w64/).
+2. Run the installer. When asked for the installation path, browse and select a folder named `qemu` **inside** this project's directory.
+   - Example: `X:\portable-qemu-launcher\qemu\`
+3. **Crucial**: Ensure you install to this local folder, NOT "Program Files". This avoids needing admin permissions.
+4. The launcher will automatically detect `qemu-system-x86_64.exe` in that folder.
 
 ## Configuration
 
