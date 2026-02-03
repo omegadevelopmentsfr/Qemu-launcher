@@ -16,12 +16,18 @@ A lightweight, portable Python-based GUI launcher for QEMU virtual machines. Des
 
 ### Prerequisites
 
-- Python 3.10 or higher.
-- **Linux**: Ensure QEMU system and GUI packages are installed:
-  ```bash
-  sudo apt update
-  sudo apt install qemu-system-x86 qemu-system-gui
-  ```
+#### Windows
+1. **Python 3**: Download and install [Python 3.10 or newer](https://www.python.org/downloads/windows/).
+   - **Important**: During installation, check the box **"Add Python to PATH"**.
+2. **Dependencies**: You must install the required libraries (see below).
+
+#### Linux
+1. **Python 3**: Usually pre-installed. Ensure you have `python3-pip` and `python3-venv` (optional but recommended).
+2. **QEMU**: Ensure QEMU system and GUI packages are installed:
+   ```bash
+   sudo apt update
+   sudo apt install qemu-system-x86 qemu-system-gui python3-pip
+   ```
 
 ### Setting up the Environment
 
@@ -33,11 +39,12 @@ It is recommended to use a virtual environment or install dependencies directly 
    cd portable-qemu-launcher
    ```
 
-2. Install dependencies:
+2. Install Python dependencies (Windows & Linux):
+   Open your terminal (CMD/PowerShell on Windows) in the project folder and run:
    ```bash
    pip install -r requirements.txt
    ```
-   *Note for Linux users: If you encounter an "externally-managed-environment" error, use `pip install -r requirements.txt --break-system-packages` or set up a venv.*
+   *Note for Linux users: If you encounter an "externally-managed-environment" error, use `pip install -r requirements.txt --break-system-packages`.*
 
 ## Usage
 
