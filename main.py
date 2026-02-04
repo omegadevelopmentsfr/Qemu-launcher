@@ -69,13 +69,25 @@ class VMEditor(ctk.CTkToplevel):
 
     def browse_disk_new(self):
         filename = filedialog.asksaveasfilename(
-            title="Select/Create Disk Image",
+            title="Create New Disk Image",
             defaultextension=".qcow2",
             filetypes=[("QCOW2 Image", "*.qcow2"), ("All files", "*.*")]
         )
         if filename:
             self.disk_entry.delete(0, 'end')
             self.disk_entry.insert(0, filename)
+            self.disk_size_entry.configure(state="normal")
+
+    def browse_disk_existing(self):
+        filename = filedialog.askopenfilename(
+            title="Select Existing Disk Image",
+            filetypes=[("QCOW2 Image", "*.qcow2"), ("All files", "*.*")]
+        )
+        if filename:
+            self.disk_entry.delete(0, 'end')
+            self.disk_entry.insert(0, filename)
+            self.disk_size_entry.delete(0, 'end')
+            self.disk_size_entry.configure(placeholder_text="N/A")
 
     def browse_iso(self):
         filename = filedialog.askopenfilename(title="Select ISO Image", filetypes=[("ISO files", "*.iso"), ("All files", "*.*")])
