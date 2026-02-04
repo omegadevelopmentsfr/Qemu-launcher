@@ -42,14 +42,20 @@ class VMEditor(ctk.CTkToplevel):
         self.disk_entry = ctk.CTkEntry(self)
         self.disk_entry.pack(pady=(0, 5))
         if self.vm_data.get("disk_path"): self.disk_entry.insert(0, self.vm_data["disk_path"])
-        ctk.CTkButton(self, text="Browse Disk", command=self.browse_disk).pack(pady=(0, 10))
+        
+        btn_frame = ctk.CTkFrame(self, fg_color="transparent")
+        btn_frame.pack(pady=(0, 10))
+        ctk.CTkButton(btn_frame, text="Create New", width=100, command=self.browse_disk_new).pack(side="left", padx=5)
+        ctk.CTkButton(btn_frame, text="Select Existing", width=100, command=self.browse_disk_existing).pack(side="left", padx=5)
 
         # Disk Size
-        ctk.CTkLabel(self, text="Disk Size (GB):").pack(pady=(5, 0))
+        ctk.CTkLabel(self, text="Disk Size (GB) - for creation:").pack(pady=(5, 0))
         self.disk_size_entry = ctk.CTkEntry(self)
         self.disk_size_entry.pack(pady=(0, 10))
-        if self.vm_data.get("disk_size"): self.disk_size_entry.insert(0, self.vm_data["disk_size"])
-        else: self.disk_size_entry.insert(0, "20") # Default 20GB
+        if self.vm_data.get("disk_size"): 
+            self.disk_size_entry.insert(0, self.vm_data["disk_size"])
+        else: 
+            self.disk_size_entry.insert(0, "20") # Default 20GB
 
         # ISO Path
         ctk.CTkLabel(self, text="ISO Path (CDROM):").pack(pady=(5, 0))
@@ -61,7 +67,7 @@ class VMEditor(ctk.CTkToplevel):
         # Save Button
         ctk.CTkButton(self, text="Save", command=self.save).pack(pady=20)
 
-    def browse_disk(self):
+    def browse_disk_new(self):
         filename = filedialog.asksaveasfilename(
             title="Select/Create Disk Image",
             defaultextension=".qcow2",
