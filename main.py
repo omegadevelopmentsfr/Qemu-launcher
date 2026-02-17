@@ -2,6 +2,8 @@ import customtkinter as ctk
 from tkinter import filedialog
 import vm_manager
 
+print("Don't close this terminal, it is used by the application and QEMU")
+
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
 
@@ -9,7 +11,7 @@ class VMEditor(ctk.CTkToplevel):
     def __init__(self, parent, vm_data=None):
         super().__init__(parent)
         self.title("Edit VM" if vm_data else "Add New VM")
-        self.geometry("400x500")
+        self.geometry("400x620")
         
         self.vm_data = vm_data or {}
         self.result = None
@@ -57,15 +59,57 @@ class VMEditor(ctk.CTkToplevel):
         else: 
             self.disk_size_entry.insert(0, "20") # Default 20GB
 
-        # ISO Path
-        ctk.CTkLabel(self, text="ISO Path (CDROM):").pack(pady=(5, 0))
-        self.iso_entry = ctk.CTkEntry(self)
-        self.iso_entry.pack(pady=(0, 5))
+        # --- Install Mode Selector ---
+        ctk.CTkLabel(self, text="Installation Media:").pack(pady=(10, 0))
+        
+        current_mode = self.vm_data.get("install_mode", "iso")
+        self.install_mode_var = ctk.StringVar(value="ISO (CD-ROM)" if current_mode == "iso" else "Disquettes (A: / B:)")
+        
+        self.mode_selector = ctk.CTkSegmentedButton(
+            self,
+            values=["ISO (CD-ROM)", "Disquettes (A: / B:)"],
+            variable=self.install_mode_var,
+            command=self.on_mode_change
+        )
+        self.mode_selector.pack(pady=(5, 10), padx=20, fill="x")
+
+        # --- ISO Frame ---
+        self.iso_frame = ctk.CTkFrame(self, fg_color="transparent")
+        
+        ctk.CTkLabel(self.iso_frame, text="ISO Path (CDROM):").pack(pady=(5, 0))
+        self.iso_entry = ctk.CTkEntry(self.iso_frame)
+        self.iso_entry.pack(pady=(0, 5), padx=10, fill="x")
         if self.vm_data.get("iso_path"): self.iso_entry.insert(0, self.vm_data["iso_path"])
-        ctk.CTkButton(self, text="Browse ISO", command=self.browse_iso).pack(pady=(0, 10))
+        ctk.CTkButton(self.iso_frame, text="Browse ISO", command=self.browse_iso).pack(pady=(0, 5))
+
+        # --- Floppy Frame ---
+        self.floppy_frame = ctk.CTkFrame(self, fg_color="transparent")
+        
+        ctk.CTkLabel(self.floppy_frame, text="Floppy A: (.img):").pack(pady=(5, 0))
+        self.floppy_a_entry = ctk.CTkEntry(self.floppy_frame)
+        self.floppy_a_entry.pack(pady=(0, 5), padx=10, fill="x")
+        if self.vm_data.get("floppy_a_path"): self.floppy_a_entry.insert(0, self.vm_data["floppy_a_path"])
+        ctk.CTkButton(self.floppy_frame, text="Browse Floppy A:", command=self.browse_floppy_a).pack(pady=(0, 5))
+        
+        ctk.CTkLabel(self.floppy_frame, text="Floppy B: (.img):").pack(pady=(5, 0))
+        self.floppy_b_entry = ctk.CTkEntry(self.floppy_frame)
+        self.floppy_b_entry.pack(pady=(0, 5), padx=10, fill="x")
+        if self.vm_data.get("floppy_b_path"): self.floppy_b_entry.insert(0, self.vm_data["floppy_b_path"])
+        ctk.CTkButton(self.floppy_frame, text="Browse Floppy B:", command=self.browse_floppy_b).pack(pady=(0, 5))
+
+        # Show the correct frame based on current mode
+        self.on_mode_change(self.install_mode_var.get())
         
         # Save Button
         ctk.CTkButton(self, text="Save", command=self.save).pack(pady=20)
+
+    def on_mode_change(self, selected):
+        if selected == "ISO (CD-ROM)":
+            self.floppy_frame.pack_forget()
+            self.iso_frame.pack(pady=(0, 5), fill="x")
+        else:
+            self.iso_frame.pack_forget()
+            self.floppy_frame.pack(pady=(0, 5), fill="x")
 
     def browse_disk_new(self):
         filename = filedialog.asksaveasfilename(
@@ -95,14 +139,30 @@ class VMEditor(ctk.CTkToplevel):
             self.iso_entry.delete(0, 'end')
             self.iso_entry.insert(0, filename)
 
+    def browse_floppy_a(self):
+        filename = filedialog.askopenfilename(title="Select Floppy A: Image", filetypes=[("IMG files", "*.img"), ("All files", "*.*")])
+        if filename:
+            self.floppy_a_entry.delete(0, 'end')
+            self.floppy_a_entry.insert(0, filename)
+
+    def browse_floppy_b(self):
+        filename = filedialog.askopenfilename(title="Select Floppy B: Image", filetypes=[("IMG files", "*.img"), ("All files", "*.*")])
+        if filename:
+            self.floppy_b_entry.delete(0, 'end')
+            self.floppy_b_entry.insert(0, filename)
+
     def save(self):
+        install_mode = "iso" if self.install_mode_var.get() == "ISO (CD-ROM)" else "floppy"
         self.result = {
             "name": self.name_entry.get(),
             "ram": self.ram_entry.get(),
             "cpu": self.cpu_entry.get(),
             "disk_path": self.disk_entry.get(),
             "disk_size": self.disk_size_entry.get(),
-            "iso_path": self.iso_entry.get()
+            "install_mode": install_mode,
+            "iso_path": self.iso_entry.get(),
+            "floppy_a_path": self.floppy_a_entry.get(),
+            "floppy_b_path": self.floppy_b_entry.get()
         }
         self.destroy()
 
@@ -121,15 +181,8 @@ class QemuLauncherApp(ctk.CTk):
         self.check_vm_status()
 
     def check_vm_status(self):
-        # Refresh list every second to update button states (e.g. if VM closed externally)
-        # Note: A full refresh is expensive, maybe just update buttons?
-        # For simplicity in this mvp, we full refresh or we could iterate buttons.
-        # Let's just iterate buttons to be efficient.
-        # However, we recreate buttons on refresh.
-        
-        # Actually, let's just trigger a lightweight update or just rely on manual clicks?
-        # User requested "buttons", so they should update.
-        self.refresh_vm_list()
+        # Update only button states every 2 seconds to prevent flickering
+        self.update_vm_status_buttons()
         self.after(2000, self.check_vm_status)
 
     def create_layout(self):
@@ -180,6 +233,7 @@ class QemuLauncherApp(ctk.CTk):
             widget.destroy()
         
         self.vm_buttons = []
+        self.status_buttons = [] # Store references to launch/stop buttons
         
         for idx, vm in enumerate(self.vm_manager.vms):
             frame = ctk.CTkFrame(self.vm_list_frame)
@@ -202,6 +256,22 @@ class QemuLauncherApp(ctk.CTk):
             launch_btn.pack(side="right", padx=10)
             
             self.vm_buttons.append(btn)
+            self.status_buttons.append(launch_btn)
+
+    def update_vm_status_buttons(self):
+        """Update only the status buttons without recreating the whole list to avoid flickering."""
+        if not hasattr(self, "status_buttons"): return
+        
+        for idx, btn in enumerate(self.status_buttons):
+            is_running = self.vm_manager.is_vm_running(idx)
+            current_text = btn.cget("text")
+            
+            if is_running and current_text == "Launch":
+                # Changed from stopped to running
+                btn.configure(text="Stop", fg_color="red", command=lambda i=idx: self.stop_vm(i))
+            elif not is_running and current_text == "Stop":
+                # Changed from running to stopped
+                btn.configure(text="Launch", fg_color="green", command=lambda i=idx: self.launch_vm(i))
 
     def select_vm(self, index):
         self.selected_vm_index = index

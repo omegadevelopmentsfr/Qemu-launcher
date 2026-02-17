@@ -178,9 +178,19 @@ class VMManager:
         if vm_data.get("disk_path"):
             cmd.extend(["-hda", vm_data["disk_path"]])
             
-        # ISO image (CDROM)
-        if vm_data.get("iso_path"):
-            cmd.extend(["-cdrom", vm_data["iso_path"]])
+        # ISO image (CDROM) or Floppy disks based on install_mode
+        install_mode = vm_data.get("install_mode", "iso")
+        
+        if install_mode == "floppy":
+            # Floppy disk mode
+            if vm_data.get("floppy_a_path"):
+                cmd.extend(["-fda", vm_data["floppy_a_path"]])
+            if vm_data.get("floppy_b_path"):
+                cmd.extend(["-fdb", vm_data["floppy_b_path"]])
+        else:
+            # ISO mode (default, backward compatible)
+            if vm_data.get("iso_path"):
+                cmd.extend(["-cdrom", vm_data["iso_path"]])
             
         # Boot order
         if vm_data.get("boot_order"):
