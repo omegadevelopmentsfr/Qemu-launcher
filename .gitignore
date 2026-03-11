@@ -10,6 +10,7 @@ env/
 
 # User Configuration
 config.json
+run.sh
 
 # IDEs
 .vscode/
