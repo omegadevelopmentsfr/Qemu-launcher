@@ -11,7 +11,7 @@ class VMEditor(ctk.CTkToplevel):
     def __init__(self, parent, vm_data=None):
         super().__init__(parent)
         self.title("Edit VM" if vm_data else "Add New VM")
-        self.geometry("400x620")
+        self.geometry("400x720")
         
         self.vm_data = vm_data or {}
         self.result = None
@@ -172,7 +172,7 @@ class QemuLauncherApp(ctk.CTk):
         super().__init__()
 
         self.title("QEMU Portable Launcher")
-        self.geometry("800x600")
+        self.geometry("1200x800")
 
         self.vm_manager = vm_manager.VMManager()
 
@@ -200,13 +200,13 @@ class QemuLauncherApp(ctk.CTk):
         ctk.CTkLabel(self.sidebar, text="Settings", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(40, 10))
         
         # QEMU System Path
-        ctk.CTkLabel(self.sidebar, text="QEMU Path:").pack(padx=20, anchor="w")
+        ctk.CTkLabel(self.sidebar, text="QEMU Path (QEMU-system-x86_64.exe or QEMU-system-x86_64 on linux) (select the executable file)").pack(padx=20, anchor="w")
         self.qemu_path_entry = ctk.CTkEntry(self.sidebar)
         self.qemu_path_entry.pack(padx=10, pady=5, fill="x")
         self.qemu_path_entry.insert(0, self.vm_manager.qemu_path or "")
         
         # QEMU Img Path
-        ctk.CTkLabel(self.sidebar, text="QEMU Img Path:").pack(padx=20, anchor="w")
+        ctk.CTkLabel(self.sidebar, text="QEMU Img Path (QEMU-img.exe or QEMU-img on linux) (select the executable file)").pack(padx=20, anchor="w")
         self.qemu_img_path_entry = ctk.CTkEntry(self.sidebar)
         self.qemu_img_path_entry.pack(padx=10, pady=5, fill="x")
         self.qemu_img_path_entry.insert(0, self.vm_manager.qemu_img_path or "")
